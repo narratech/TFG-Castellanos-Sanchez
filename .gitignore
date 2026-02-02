@@ -1,0 +1,96 @@
+# Todo lo que se debe ignorar para subir al repositorio
+
+# Ficheros específicos del usuario de Visual Studio 2022
+.vs/
+
+# Ficheros de objetos compilados
+*.slo
+*.lo
+*.o
+*.obj
+
+# Cabeceras precompiladas
+*.gch
+*.pch
+
+# Librerías dinámicas compiladas
+*.so
+*.dylib
+*.dll
+
+# Ficheros de módulos de Fortran
+*.mod
+
+# Librerías estáticas compiladas
+*.lai
+*.la
+*.a
+*.lib
+
+# Ejecutables
+*.exe
+*.out
+*.app
+*.ipa
+
+# Estos ficheros de proyecto pueden ser generados por el propio motor
+*.xcodeproj
+*.xcworkspace
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Código fuente que no queremos o no podemos publicar en un repositorio público y con poco espacio (sean nuestros o ThirdParty)
+Source/SourceNoRepo/
+
+# Recursos que se usan o no en el proyecto, sean nuestros o de terceros, que en ningún caso queremos o podemos publicar en un repositorio público y con poco espacio como GitHub
+Content/Characters/
+Content/ThirdPerson/
+Content/Collections/
+Content/Developers/
+Content/LevelPrototyping/
+Content/MetaHumans/
+Content/Meta/
+Content/Input/
+Content/Assets/
+Content/CaptureManager/
+
+
+
+Content/ContentNoRepo/
+Content/Megascans/
+
+# Recursos crudos, sean nuestros o de terceros, que en ningún caso queremos o podemos publicar en un repositorio público y con poco espacio como GitHub
+#    Antes se hablaba de recursos precompilados y ponía: SourceArt/**/*.png   SourceArt/**/*.tga
+RawContent/RawContentNoRepo/
+
+# Ficheros binarios
+Binaries/*
+Plugins/*/Binaries/*
+
+# Builds
+Build/*
+
+# Whitelist PakBlacklist-<BuildConfiguration>.txt files
+!Build/*/
+Build/*/**
+!Build/*/PakBlacklist*.txt
+
+# No ignorar los ficheros de icono de las Builds
+!Build/**/*.ico
+
+# Datos de construcción para los mapas
+*_BuiltData.uasset
+
+# Ficheros de configuración generados por el editor
+Saved/*
+
+# Ficheros fuente compilados que usa el motor
+Intermediate/*
+Plugins/*/Intermediate/*
+
+# Ficheros cacheados que usa el editor
+DerivedDataCache/*
