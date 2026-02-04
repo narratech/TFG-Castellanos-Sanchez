@@ -1,0 +1,5 @@
+1) Usar import_dependencies.bat para crear el enviroment de Python.
+
+2) Usar training.bat con los datos dentro de datatest nombrados dataset.csv para crear el modelo gru ya entrenado.
+
+3) Usar testeo.bat con datos dentro de datatest nombrados como realset.csv para comprobar la precisión y coorelaccion del modelo con los nuevos datos.
