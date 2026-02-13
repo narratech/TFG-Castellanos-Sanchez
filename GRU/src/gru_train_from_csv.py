@@ -1,8 +1,21 @@
+
+import argparse
+
+parser = argparse.ArgumentParser(description="Script para entrenar GRU")
+
+parser.add_argument("--csv", type=str, required=True, help="Ruta del archivo CSV de entrada")
+parser.add_argument("--epochs", type=int, default=100, help="Número de épocas")
+parser.add_argument("--onehot", type=bool, default=False, help="Indica si necesita aplicar onehot")
+
+args = parser.parse_args()
+
 # ============================================================
 # 🔧 CONFIGURACIÓN
 # ============================================================
 
-CSV_PATH = "datatest/generated_dataset.csv"
+CSV_PATH = "datatest/"+args.csv
+
+NEED_ONEHOT = args.onehot
 
 HIDDEN_SIZE = 64
 NUM_LAYERS = 1
@@ -10,7 +23,7 @@ OUTPUT_SIZE = 6
 SEQUENCE_LENGTH = 35
 
 BATCH_SIZE = 32
-EPOCHS = 100
+EPOCHS = args.epochs
 LEARNING_RATE = 0.01
 
 NOISE_STD = 0.05
@@ -31,7 +44,7 @@ import matplotlib.pyplot as plt
 
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
-from sklearn.decomposition import PCA
+from onehot_loader import cargar_csv_onehot
 import os
 
 # Crea el directorio si no existe
@@ -43,11 +56,17 @@ os.makedirs("models", exist_ok=True)
 # ============================================================
 
 class EmotionSequenceDataset(Dataset):
-    def __init__(self, csv_path, sequence_length):
-        df = pd.read_csv(csv_path)
-        self.inputs = df.iloc[:, :-OUTPUT_SIZE].values
-        self.targets = df.iloc[:, -OUTPUT_SIZE:].values
+    def __init__(self, X_raw, Y_raw, sequence_length):
+        self.inputs = X_raw
+        self.targets = Y_raw
         self.sequence_length = sequence_length
+        
+    @classmethod
+    def from_csv(cls, csv_path, sequence_length):
+        df = pd.read_csv(csv_path)
+        inputs = df.iloc[:, :-OUTPUT_SIZE].values
+        targets = df.iloc[:, -OUTPUT_SIZE:].values
+        return cls(inputs, targets, sequence_length)
 
     def __len__(self):
         return len(self.inputs) - self.sequence_length
@@ -86,9 +105,7 @@ class GRUEmotionModel(nn.Module):
 # 🎯 ENTRENAR GRU
 # ============================================================
 
-def train_gru(device):
-    dataset = EmotionSequenceDataset(CSV_PATH, SEQUENCE_LENGTH)
-    loader = DataLoader(dataset, BATCH_SIZE, shuffle=True)
+def train_gru(device, dataset, loader):
     input_size = dataset.inputs.shape[1]
 
     model = GRUEmotionModel(input_size).to(device)
@@ -179,9 +196,28 @@ def evaluate(model, loader, device):
 if __name__ == "__main__":
     device = torch.device("cuda" if USE_CUDA and torch.cuda.is_available() else "cpu")
 
-    dataset = EmotionSequenceDataset(CSV_PATH, SEQUENCE_LENGTH)
-    loader = DataLoader(dataset, BATCH_SIZE, shuffle=False)
+    dataset = None
 
-    model = train_gru(device)
+    if(NEED_ONEHOT):
+        targets = [
+        "Ira",
+        "Miedo",
+        "Felicidad",
+        "Tristeza",
+        "Sorpresa",
+        "Disgusto"
+        ]
+        
+        X_raw, Y_raw = cargar_csv_onehot(
+        ruta_csv=CSV_PATH,
+        columnas_target=targets
+        )
+        dataset = EmotionSequenceDataset(X_raw, Y_raw, SEQUENCE_LENGTH)
+    else:
+        dataset = EmotionSequenceDataset.from_csv(CSV_PATH, SEQUENCE_LENGTH)
+
+    loader = DataLoader(dataset, BATCH_SIZE, shuffle=True)
+
+    model = train_gru(device, dataset, loader)
 
     evaluate(model, loader, device)
