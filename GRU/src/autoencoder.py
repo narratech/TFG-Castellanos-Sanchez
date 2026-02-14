@@ -1,7 +1,3 @@
-# ============================================================
-# 🔧 CONFIGURACIÓN
-# ============================================================
-
 import argparse
 
 parser = argparse.ArgumentParser(description="Script para entrenar GRU")
@@ -10,11 +6,15 @@ parser.add_argument("--epochs", type=int, default=100, help="Número de épocas"
 
 args = parser.parse_args()
 
+# ============================================================
+# 🔧 CONFIGURACIÓN
+# ============================================================
+
+
 DATASET_PATH = args.csv         # real (9 + 6)
 OUTPUT_CSV = "generated_"
 CSV_FOLDER = "datatest/"
 
-INPUT_SIZE = 9
 OUTPUT_SIZE = 6
 SEQUENCE_LENGTH = 35
 
@@ -43,8 +43,7 @@ import torch.nn as nn
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
+from onehot_loader import cargar_csv_onehot
 
 
 # ============================================================
@@ -52,10 +51,9 @@ from sklearn.decomposition import PCA
 # ============================================================
 
 class RealDataset(Dataset):
-    def __init__(self, csv_path):
-        df = pd.read_csv(csv_path)
-        self.X = df.iloc[:, :INPUT_SIZE].values
-        self.Y = df.iloc[:, INPUT_SIZE:].values
+    def __init__(self, X_raw, Y_raw):
+        self.X = X_raw
+        self.Y = Y_raw
 
     def create_windows(self):
         Xw, Yw = [], []
@@ -69,10 +67,10 @@ class RealDataset(Dataset):
 # ============================================================
 
 class GRUAutoencoder(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size):
         super().__init__()
-        self.encoder = nn.GRU(INPUT_SIZE, LATENT_SIZE, batch_first=True)
-        self.decoder = nn.GRU(LATENT_SIZE, INPUT_SIZE, batch_first=True)
+        self.encoder = nn.GRU(input_size, LATENT_SIZE, batch_first=True)
+        self.decoder = nn.GRU(LATENT_SIZE, input_size, batch_first=True)
 
     def forward(self, x):
         _, h = self.encoder(x)
@@ -85,9 +83,9 @@ class GRUAutoencoder(nn.Module):
 # ============================================================
 
 class GRUEmotion(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size):
         super().__init__()
-        self.gru = nn.GRU(INPUT_SIZE, HIDDEN_SIZE, batch_first=True)
+        self.gru = nn.GRU(input_size, HIDDEN_SIZE, batch_first=True)
         self.fc = nn.Sequential(
             nn.Linear(HIDDEN_SIZE, OUTPUT_SIZE),
             nn.Sigmoid()
@@ -101,8 +99,8 @@ class GRUEmotion(nn.Module):
 # 🚀 ENTRENAR AUTOENCODER
 # ============================================================
 
-def train_autoencoder(X, device):
-    ae = GRUAutoencoder().to(device)
+def train_autoencoder(X, input_size, device):
+    ae = GRUAutoencoder(input_size).to(device)
     optimizer = torch.optim.Adam(ae.parameters(), lr=LR)
     loss_fn = nn.MSELoss()
 
@@ -150,6 +148,31 @@ def generate_sequences(ae, X_real, device):
 
     return np.array(sequences)
 
+def argmax(X_synth):
+    # Hacemos una copia para no modificar la original
+    X_synth_discrete = X_synth.copy()
+
+    for var, cols in categorical_info.items():
+        # Obtener los índices de las columnas
+        col_indices = [i for i, c in enumerate(cols)]  # si los tienes como nombres, mapéalos a índices
+        
+        # Tomamos solo las columnas de la variable categórica
+        cat_vals = X_synth[:, :, col_indices]  # shape: (N, SEQ_LEN, n_categories)
+        
+        # Aplicamos argmax a lo largo de la dimensión de categorías (axis=2)
+        argmax_vals = np.argmax(cat_vals, axis=2)  # shape: (N, SEQ_LEN)
+        
+        # Reconstruir One-Hot: limpiar las columnas originales
+        X_synth_discrete[:, :, col_indices] = 0
+        
+        # Poner 1 en la categoría seleccionada
+        N, SEQ_LEN = argmax_vals.shape
+        for i in range(N):
+            for t in range(SEQ_LEN):
+                X_synth_discrete[i, t, col_indices[argmax_vals[i, t]]] = 1
+        
+    return X_synth_discrete
+
 def evaluate(model, loader, device):
     model.eval()
     preds, targets = [], []
@@ -180,8 +203,8 @@ def evaluate(model, loader, device):
 # 🚀 ENTRENAR GRU (SOLO DATOS REALES)
 # ============================================================
 
-def train_gru_real(X, Y, device):
-    model = GRUEmotion().to(device)
+def train_gru_real(X, Y, input_size, device):
+    model = GRUEmotion(input_size).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     loss_fn = nn.MSELoss()
 
@@ -247,14 +270,14 @@ def plot_latents(ae, sequences, device):
 # 💾 EXPORTAR CSV FINAL
 # ============================================================
 
-def export_csv(seqs, preds):
+def export_csv(seqs, preds, input_size):
     rows = []
     for s, p in zip(seqs, preds):
         rows.append(np.concatenate([s[-1], p]))
 
     df = pd.DataFrame(
         rows,
-        columns=[f"Input_{i+1}" for i in range(INPUT_SIZE)] + EMOTIONS
+        columns=[f"Input_{i+1}" for i in range(input_size)] + EMOTIONS
     )
     df.to_csv(CSV_FOLDER+OUTPUT_CSV+DATASET_PATH, index=False)
     print(f"✅ CSV generado: {CSV_FOLDER+OUTPUT_CSV+DATASET_PATH}")
@@ -266,22 +289,40 @@ def export_csv(seqs, preds):
 if __name__ == "__main__":
     device = torch.device("cuda" if USE_CUDA and torch.cuda.is_available() else "cpu")
 
-    dataset = RealDataset(CSV_FOLDER+DATASET_PATH)
+    targets = [
+    "Ira",
+    "Miedo",
+    "Felicidad",
+    "Tristeza",
+    "Sorpresa",
+    "Disgusto"
+    ]
+
+    X_raw, Y_raw, categorical_info = cargar_csv_onehot(
+    ruta_csv=CSV_FOLDER + DATASET_PATH,
+    columnas_target=targets
+    )
+
+    input_size = X_raw.shape[1]
+
+    dataset = RealDataset(X_raw, Y_raw)
     X_real, Y_real = dataset.create_windows()
 
     # 1️⃣ Autoencoder → generar inputs nuevos
-    ae = train_autoencoder(X_real, device)
+    ae = train_autoencoder(X_real, input_size, device)
     X_synth = generate_sequences(ae, X_real, device)
 
+    X_synth_discrete = argmax(X_synth)
+
     # 2️⃣ GRU entrenado SOLO con reales
-    gru = train_gru_real(X_real, Y_real, device)
+    gru = train_gru_real(X_real, Y_real, input_size, device)
 
     # 3️⃣ Predicción emociones sintéticas
     with torch.no_grad():
-        preds = gru(torch.tensor(X_synth, dtype=torch.float32).to(device)).cpu().numpy()
+        preds = gru(torch.tensor(X_synth_discrete, dtype=torch.float32).to(device)).cpu().numpy()
 
     # 4️⃣ Exportar CSV final
-    export_csv(X_synth, preds)
+    export_csv(X_synth_discrete, preds, input_size)
 
     # 5️⃣ Visualizar espacio latente de secuencias nuevas
-    plot_latents(ae, X_synth, device)
+    plot_latents(ae, X_synth_discrete, device)
