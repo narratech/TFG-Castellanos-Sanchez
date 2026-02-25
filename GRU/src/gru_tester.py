@@ -1,8 +1,17 @@
+import argparse
+
+parser = argparse.ArgumentParser(description="Script para entrenar GRU")
+
+parser.add_argument("--csv", type=str, required=True, help="Ruta del archivo CSV de entrada")
+parser.add_argument("--onehot", type=bool, default=False, help="Indica si necesita aplicar onehot")
+
+args = parser.parse_args()
+
 # ============================================================
 # 🔧 CONFIGURACIÓN
 # ============================================================
 
-CSV_PATH = "datatest/generated_realset.csv"
+CSV_PATH = "datatest/"+args.csv
 MODEL_PATH = "models/gru_model.pth"
 CSV_OUTPUT = "datatest/predicted.csv"
 
@@ -15,6 +24,7 @@ NUM_LAYERS = 1
 BATCH_SIZE = 32
 ACCURACY_THRESHOLD = 0.1
 USE_CUDA = True
+NEED_ONEHOT = args.onehot
 
 # ============================================================
 # 📦 IMPORTS
@@ -26,18 +36,24 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from scipy.stats import pearsonr
+from onehot_loader import cargar_csv_onehot
 
 # ============================================================
 # 📊 DATASET
 # ============================================================
 
 class EmotionSequenceDataset(Dataset):
-    def __init__(self, csv_path, sequence_length):
-        df = pd.read_csv(csv_path)
-
-        self.inputs = df.iloc[:, :-OUTPUT_SIZE].values
-        self.targets = df.iloc[:, -OUTPUT_SIZE:].values
+    def __init__(self, X_raw, Y_raw, sequence_length):
+        self.inputs = X_raw
+        self.targets = Y_raw
         self.sequence_length = sequence_length
+        
+    @classmethod
+    def from_csv(cls, csv_path, sequence_length):
+        df = pd.read_csv(csv_path)
+        inputs = df.iloc[:, :-OUTPUT_SIZE].values
+        targets = df.iloc[:, -OUTPUT_SIZE:].values
+        return cls(inputs, targets, sequence_length)
 
     def __len__(self):
         return len(self.inputs) - self.sequence_length
@@ -146,7 +162,24 @@ if __name__ == "__main__":
     print(f"🖥️ Usando dispositivo: {device}")
 
     # Dataset
-    dataset = EmotionSequenceDataset(CSV_PATH, SEQUENCE_LENGTH)
+    dataset = None
+    if(NEED_ONEHOT):
+        targets = [
+        "Ira",
+        "Miedo",
+        "Felicidad",
+        "Tristeza",
+        "Sorpresa",
+        "Disgusto"
+        ]
+        print(f"{CSV_PATH}")
+        X_raw, Y_raw, categorical_info = cargar_csv_onehot(
+        ruta_csv=CSV_PATH,
+        columnas_target=targets
+        )
+        dataset = EmotionSequenceDataset(X_raw, Y_raw, SEQUENCE_LENGTH)
+    else:
+        dataset = EmotionSequenceDataset.from_csv(CSV_PATH, SEQUENCE_LENGTH)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # Modelo

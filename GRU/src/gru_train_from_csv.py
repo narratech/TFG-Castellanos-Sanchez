@@ -208,7 +208,7 @@ if __name__ == "__main__":
         "Disgusto"
         ]
         
-        X_raw, Y_raw = cargar_csv_onehot(
+        X_raw, Y_raw, categorical_info = cargar_csv_onehot(
         ruta_csv=CSV_PATH,
         columnas_target=targets
         )
