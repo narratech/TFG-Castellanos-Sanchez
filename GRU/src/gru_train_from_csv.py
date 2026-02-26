@@ -126,7 +126,9 @@ def train_gru(device, dataset, loader):
 
         print(f"Epoch {epoch+1}/{EPOCHS} - Loss {loss_total:.4f}")
 
+    #Export en formato .pth
     torch.save(model.state_dict(), "models/gru_model.pth")
+
     print("✅ GRU supervisado guardado en models/gru_model.pth")
 
     return model
@@ -190,6 +192,41 @@ def evaluate(model, loader, device):
     plt.show()
 
 # ============================================================
+# 📁 EXPORTAR A ONNX
+# ============================================================
+def export_to_onnx(model, dataset, device):
+    model.eval()
+
+    input_size = dataset.inputs.shape[1]
+
+    # Dummy input (batch=1, seq=35, features)
+    dummy_input = torch.randn(
+        1,
+        SEQUENCE_LENGTH,
+        input_size,
+        device=device
+    )
+
+    onnx_path = "models/gru_model.onnx"
+
+    torch.onnx.export(
+        model,
+        dummy_input,
+        onnx_path,
+        export_params=True,
+        opset_version=17,
+        do_constant_folding=True,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={
+            "input": {0: "batch_size"},
+            "output": {0: "batch_size"}
+        }
+    )
+
+    print(f"✅ Modelo ONNX exportado en {onnx_path}")
+
+# ============================================================
 # 🏁 MAIN
 # ============================================================
 
@@ -219,5 +256,7 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, BATCH_SIZE, shuffle=True)
 
     model = train_gru(device, dataset, loader)
+    
+    export_to_onnx(model, dataset, device)
 
     evaluate(model, loader, device)

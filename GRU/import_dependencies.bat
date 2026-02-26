@@ -124,6 +124,59 @@ if ERRORLEVEL 1 (
 )
 del temp_check.py
 
+REM -----------------------------
+REM 8) Comprobar e instalar onnx
+REM -----------------------------
+echo import importlib.util> temp_check.py
+echo import sys>> temp_check.py
+echo import subprocess>> temp_check.py
+echo def install(pkg):>> temp_check.py
+echo     subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])>> temp_check.py
+echo def is_installed(pkg):>> temp_check.py
+echo     return importlib.util.find_spec(pkg) is not None>> temp_check.py
+echo if not is_installed("onnx"):>> temp_check.py
+echo     print("Instalando onnx...")>> temp_check.py
+echo     install("onnx")>> temp_check.py
+echo else:>> temp_check.py
+echo     print("onnx ya instalado.")>> temp_check.py
+
+python temp_check.py
+if ERRORLEVEL 1 (
+    echo Error instalando onnx. Pulsa Intro para salir.
+    pause
+    del temp_check.py
+    exit /b 1
+)
+
+del temp_check.py
+
+
+REM -----------------------------
+REM 9) Comprobar e instalar onnxscript
+REM -----------------------------
+echo import importlib.util> temp_check.py
+echo import sys>> temp_check.py
+echo import subprocess>> temp_check.py
+echo def install(pkg):>> temp_check.py
+echo     subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])>> temp_check.py
+echo def is_installed(pkg):>> temp_check.py
+echo     return importlib.util.find_spec(pkg) is not None>> temp_check.py
+echo if not is_installed("onnxscript"):>> temp_check.py
+echo     print("Instalando onnxscript...")>> temp_check.py
+echo     install("onnxscript")>> temp_check.py
+echo else:>> temp_check.py
+echo     print("onnxscript ya instalado.")>> temp_check.py
+
+python temp_check.py
+if ERRORLEVEL 1 (
+    echo Error instalando onnxscript. Pulsa Intro para salir.
+    pause
+    del temp_check.py
+    exit /b 1
+)
+
+del temp_check.py
+
 echo Entorno de python creado
 pause
 endlocal

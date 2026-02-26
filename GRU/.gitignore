@@ -5,3 +5,5 @@ generated_dataset.csv
 generated_realset.csv
 predicted.csv
 gru_model.pth
+gru_model.onnx
+gru_model.onnx.data
