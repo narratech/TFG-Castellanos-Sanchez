@@ -77,6 +77,7 @@ class GRUAutoencoder(nn.Module):
         z = h[-1].unsqueeze(1).repeat(1, x.size(1), 1)
         x_hat, _ = self.decoder(z)
         return torch.clamp(x_hat, 0, 1)
+    
 
 # ============================================================
 # 🧠 GRU SUPERVISADO (SOLO REAL)
@@ -148,31 +149,6 @@ def generate_sequences(ae, X_real, device):
 
     return np.array(sequences)
 
-def argmax(X_synth):
-    # Hacemos una copia para no modificar la original
-    X_synth_discrete = X_synth.copy()
-
-    for var, cols in categorical_info.items():
-        # Obtener los índices de las columnas
-        col_indices = [i for i, c in enumerate(cols)]  # si los tienes como nombres, mapéalos a índices
-        
-        # Tomamos solo las columnas de la variable categórica
-        cat_vals = X_synth[:, :, col_indices]  # shape: (N, SEQ_LEN, n_categories)
-        
-        # Aplicamos argmax a lo largo de la dimensión de categorías (axis=2)
-        argmax_vals = np.argmax(cat_vals, axis=2)  # shape: (N, SEQ_LEN)
-        
-        # Reconstruir One-Hot: limpiar las columnas originales
-        X_synth_discrete[:, :, col_indices] = 0
-        
-        # Poner 1 en la categoría seleccionada
-        N, SEQ_LEN = argmax_vals.shape
-        for i in range(N):
-            for t in range(SEQ_LEN):
-                X_synth_discrete[i, t, col_indices[argmax_vals[i, t]]] = 1
-        
-    return X_synth_discrete
-
 def evaluate(model, loader, device):
     model.eval()
     preds, targets = [], []
@@ -198,6 +174,37 @@ def evaluate(model, loader, device):
     print("\n📊 MÉTRICAS")
     print(f"Precisión (tolerancia {ACCURACY_THRESHOLD}): {accuracy:.4f}")
     print(f"Correlación media: {np.mean(correlations):.4f}")
+
+def get_categorical_indices(categorical_info, feature_columns):
+    """
+    Devuelve índices reales de columnas categóricas en X
+    """
+    col_to_idx = {c: i for i, c in enumerate(feature_columns)}
+    categorical_indices = {}
+
+    for var, cols in categorical_info.items():
+        categorical_indices[var] = [col_to_idx[c] for c in cols]
+
+    return categorical_indices
+
+def discretize_categoricals(X, categorical_indices):
+    """
+    Numéricas → continuo [0,1]
+    Categóricas → one-hot estricto {0,1}
+    """
+    X_out = X.copy()
+
+    for _, idxs in categorical_indices.items():
+        block = X_out[:, :, idxs]          # (N, T, K)
+        winners = np.argmax(block, axis=2) # (N, T)
+
+        X_out[:, :, idxs] = 0
+
+        for i in range(X.shape[0]):
+            for t in range(X.shape[1]):
+                X_out[i, t, idxs[winners[i, t]]] = 1
+
+    return X_out
 
 # ============================================================
 # 🚀 ENTRENAR GRU (SOLO DATOS REALES)
@@ -270,14 +277,14 @@ def plot_latents(ae, sequences, device):
 # 💾 EXPORTAR CSV FINAL
 # ============================================================
 
-def export_csv(seqs, preds, input_size):
+def export_csv(seqs, preds, feature_columns):
     rows = []
     for s, p in zip(seqs, preds):
         rows.append(np.concatenate([s[-1], p]))
 
     df = pd.DataFrame(
         rows,
-        columns=[f"Input_{i+1}" for i in range(input_size)] + EMOTIONS
+        columns=feature_columns + EMOTIONS
     )
     df.to_csv(CSV_FOLDER+OUTPUT_CSV+DATASET_PATH, index=False)
     print(f"✅ CSV generado: {CSV_FOLDER+OUTPUT_CSV+DATASET_PATH}")
@@ -298,7 +305,7 @@ if __name__ == "__main__":
     "Disgusto"
     ]
 
-    X_raw, Y_raw, categorical_info = cargar_csv_onehot(
+    X_raw, Y_raw, categorical_info, feature_columns  = cargar_csv_onehot(
     ruta_csv=CSV_FOLDER + DATASET_PATH,
     columnas_target=targets
     )
@@ -310,9 +317,18 @@ if __name__ == "__main__":
 
     # 1️⃣ Autoencoder → generar inputs nuevos
     ae = train_autoencoder(X_real, input_size, device)
+    
+    categorical_indices = get_categorical_indices(
+    categorical_info,
+    feature_columns
+    )
+
     X_synth = generate_sequences(ae, X_real, device)
 
-    X_synth_discrete = argmax(X_synth)
+    X_synth_discrete = discretize_categoricals(
+        X_synth,
+        categorical_indices
+    )
 
     # 2️⃣ GRU entrenado SOLO con reales
     gru = train_gru_real(X_real, Y_real, input_size, device)
@@ -322,7 +338,7 @@ if __name__ == "__main__":
         preds = gru(torch.tensor(X_synth_discrete, dtype=torch.float32).to(device)).cpu().numpy()
 
     # 4️⃣ Exportar CSV final
-    export_csv(X_synth_discrete, preds, input_size)
+    export_csv(X_synth_discrete, preds, feature_columns)
 
     # 5️⃣ Visualizar espacio latente de secuencias nuevas
     plot_latents(ae, X_synth_discrete, device)

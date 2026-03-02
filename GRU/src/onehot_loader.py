@@ -26,7 +26,7 @@ def cargar_csv_onehot(
 
     # Detectar columnas categóricas automáticamente
     categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
-
+    print(f"Columnas categoricas: {categorical_cols}")
     df_onehot = pd.get_dummies(df)
 
     # Guardar info de qué columnas corresponden a cada variable categórica
@@ -41,4 +41,4 @@ def cargar_csv_onehot(
         X = df_onehot.to_numpy(dtype=np.float32)
 
     print("One-Hot Encoding aplicado.")
-    return X, Y, categorical_info
+    return X, Y, categorical_info, df_onehot.columns.tolist()

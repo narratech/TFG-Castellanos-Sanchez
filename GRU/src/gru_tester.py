@@ -173,7 +173,7 @@ if __name__ == "__main__":
         "Disgusto"
         ]
         print(f"{CSV_PATH}")
-        X_raw, Y_raw, categorical_info = cargar_csv_onehot(
+        X_raw, Y_raw, categorical_info, feature_columns = cargar_csv_onehot(
         ruta_csv=CSV_PATH,
         columnas_target=targets
         )
