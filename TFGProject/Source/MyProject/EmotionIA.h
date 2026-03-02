@@ -35,12 +35,15 @@ protected:
     int64 SequenceLength = 35;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EmotionAI")
-    int32 FeatureSize = 0;
+    int32 OrdinalsSize = 0;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EmotionAI")
+    TArray<int64> OnehotSizes;
 private:
 
     FEmotionIAInternalModel* InternalModel = nullptr;
 
+    int64 FeatureSize;
 
     bool CheckONNXDependenciesDynamic();
 

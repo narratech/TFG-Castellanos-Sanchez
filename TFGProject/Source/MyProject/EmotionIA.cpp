@@ -342,6 +342,11 @@ void UEmotionIA::BeginPlay()
         return;
     }
 
+    FeatureSize = OrdinalsSize;
+    for (int i = 0; i < OnehotSizes.Num(); i++) {
+        FeatureSize += OnehotSizes[i];
+    }
+
     CircularIndex = 0;
 
     InputSequence.Init(0, FeatureSize * SequenceLength);
