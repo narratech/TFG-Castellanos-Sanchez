@@ -95,4 +95,5 @@ Plugins/*/Intermediate/*
 # Ficheros cacheados que usa el editor
 DerivedDataCache/*
 
-!ThirdParty/*
+!ThirdParty/ONNXRuntime/lib/onnxruntime.lib
+!ThirdParty/ONNXRuntime/lib/onnxruntime.dll
