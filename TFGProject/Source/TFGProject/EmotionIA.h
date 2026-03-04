@@ -8,7 +8,7 @@
 struct FEmotionIAInternalModel;
 
 UCLASS(ClassGroup = (AI), meta = (BlueprintSpawnableComponent))
-class MYPROJECT_API UEmotionIA : public UActorComponent
+class TFGPROJECT_API UEmotionIA : public UActorComponent
 {
     GENERATED_BODY()
 

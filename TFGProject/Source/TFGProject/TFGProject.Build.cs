@@ -1,17 +1,17 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 using UnrealBuildTool;
 using System.IO;
 
-public class MyProject : ModuleRules
+public class TFGProject : ModuleRules
 {
-	public MyProject(ReadOnlyTargetRules Target) : base(Target)
+	public TFGProject(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
 
-        CppStandard = CppStandardVersion.Cpp20;
+		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
         // Ruta de ONNX
         string ONNXPath = Path.Combine(ModuleDirectory, "../../ThirdParty/ONNXRuntime");

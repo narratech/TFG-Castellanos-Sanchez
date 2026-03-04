@@ -8,7 +8,7 @@
 
 
 UCLASS()
-class MYPROJECT_API UOneHotEncoder : public UBlueprintFunctionLibrary
+class TFGPROJECT_API UOneHotEncoder : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
