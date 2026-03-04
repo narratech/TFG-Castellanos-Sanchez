@@ -94,3 +94,5 @@ Plugins/*/Intermediate/*
 
 # Ficheros cacheados que usa el editor
 DerivedDataCache/*
+
+!TFGProject/ThirdParty/*
