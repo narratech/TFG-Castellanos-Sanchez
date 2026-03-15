@@ -1,4 +1,4 @@
-# TFG-Castellanos-Moreno-Sanchez
+# TFG-Castellanos-Sanchez
 ## <p align="center">Plugin de Unreal Engine 5 para creación de un motor psicológico para Metahumans </p>
 
 * Adrián Castellanos Ormeño
