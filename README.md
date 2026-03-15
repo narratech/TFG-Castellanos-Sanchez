@@ -2,7 +2,6 @@
 ## <p align="center">Plugin de Unreal Engine 5 para creación de un motor psicológico para Metahumans </p>
 
 * Adrián Castellanos Ormeño
-* Daniel Moreno Álvarez
 * Pedro Sanchez Vela
 
 ### Resumen
