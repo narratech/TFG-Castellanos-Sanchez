@@ -19,4 +19,10 @@ public:
 		const FString& Input,
 		const TArray<FString>& Categories
 	);
+
+	UFUNCTION(BlueprintCallable, Category = "EmotionIA")
+	static FString OneHotDecodeWithCategories(
+		const TArray<float>& Input,
+		const TArray<FString>& Categories
+	);
 };
