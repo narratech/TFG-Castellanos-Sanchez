@@ -14,7 +14,7 @@ call "%VENV_NAME%\Scripts\activate.bat"
 REM -----------------------------
 REM 3) Ejecutar autoencoder.py
 REM -----------------------------
-echo Ejecutando autoencoder.py...
+REM echo Ejecutando autoencoder.py...
 REM python -u src/autoencoder.py --csv realset.csv --epochs 500
 
 if ERRORLEVEL 1 (
