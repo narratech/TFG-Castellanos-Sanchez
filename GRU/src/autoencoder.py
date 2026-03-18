@@ -31,18 +31,15 @@ CSV_FOLDER = "datatest/"
 OUTPUT_CSV = "generated_" + os.path.basename(DATASET_PATH)
 
 SEQUENCE_LENGTH = 35
-BLOCK_SIZE = 2 * SEQUENCE_LENGTH
+BLOCK_SIZE = SEQUENCE_LENGTH + 11
 LATENT_SIZE = 32
 HIDDEN_SIZE = 64
 AE_EPOCHS = 160
 GRU_EPOCHS = 100
 BATCH_SIZE = 32
-LR = 0.01
+LR = 0.001
 LATENT_NOISE_STD = 0.1
 USE_CUDA = True
-
-# Emociones
-EMOTIONS = ["Ira","Miedo","Felicidad","Tristeza","Sorpresa","Disgusto", "Neutra"]
 
 # ============================================================
 # 📊 DATASET
@@ -137,7 +134,7 @@ class GRUEmotionIntensity(nn.Module):
     def forward(self, x):
         _, h = self.gru(x)
         logits_emotion = self.fc_emotion(h[-1])  # ⚠ sin softmax
-        intensity = self.fc_intensity(h[-1])
+        intensity = torch.sigmoid(self.fc_intensity(h[-1]))
         return logits_emotion, intensity
 
 def train_gru(X, Y, input_size, n_emotions, device):
@@ -244,9 +241,24 @@ if __name__ == "__main__":
         ruta_csv=os.path.join(CSV_FOLDER, DATASET_PATH),
         columnas_target=["Emocion","Intensidad"]
     )
+    emotion_columns = target_info["onehot_cols"]["Emocion"]
+    n_emotions = len(emotion_columns)
+    
+
+    df_Y = pd.DataFrame(
+    Y_raw,
+    columns=target_info["onehot_cols"]["Emocion"] + ["Intensidad"]
+    )
+
+    counts = df_Y[emotion_columns].sum()
+    total = counts.sum()
+    percent = (counts / total * 100).round(2)
+
+    print("\n📊 Distribución de emociones del dataset:")
+    for col in counts.index:
+        print(f"{col:20} → {int(counts[col]):4d} ({percent[col]:5.2f}%)")
 
     input_size = X_raw.shape[1]
-    n_emotions = len(EMOTIONS)
 
     dataset = RealDataset(X_raw, Y_raw)
     X_seq, Y_seq = dataset.create_windows()
@@ -275,7 +287,7 @@ if __name__ == "__main__":
     preds[:, :n_emotions] = np.eye(n_emotions)[np.argmax(preds[:, :n_emotions], axis=1)]
 
     # 6️⃣ Exportar CSV final
-    export_csv(X_synth_discrete, preds, feature_columns, EMOTIONS)
+    export_csv(X_synth_discrete, preds, feature_columns, emotion_columns)
 
     # 7️⃣ Plot espacio latente autoencoder
     plot_latents(ae, X_synth_discrete, device)

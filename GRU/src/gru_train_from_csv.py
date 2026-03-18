@@ -38,8 +38,7 @@ BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 ACCURACY_THRESHOLD = 0.1
 
-EMOTIONS = ["Ira","Miedo","Felicidad","Tristeza","Sorpresa","Disgusto", "Neutra"]
-OUTPUT_SIZE = len(EMOTIONS) + 1  # emoción one-hot + intensidad
+OUTPUT_SIZE = 8  # emoción one-hot + intensidad
 
 os.makedirs("models", exist_ok=True)
 
@@ -83,7 +82,7 @@ class GRUEmotionIntensity(nn.Module):
         _, h = self.gru(x)
         h_last = h[-1]
         logits_emotion = self.fc_emotion(h_last)  # ⚠ sin softmax
-        intensity = self.fc_intensity(h_last)
+        intensity = torch.sigmoid(self.fc_intensity(h_last))
         return logits_emotion, intensity
 
 # ============================================================
@@ -207,10 +206,10 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     # Entrenar GRU
-    model = train_gru(DEVICE, dataset, loader, n_emotions=len(EMOTIONS))
+    model = train_gru(DEVICE, dataset, loader, OUTPUT_SIZE-1)
 
     # Exportar a ONNX
     export_to_onnx(model, dataset, DEVICE)
 
     # Evaluar
-    evaluate(model, loader, DEVICE, n_emotions=len(EMOTIONS))
+    evaluate(model, loader, DEVICE, OUTPUT_SIZE-1)

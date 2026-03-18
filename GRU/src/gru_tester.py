@@ -80,7 +80,7 @@ class GRUEmotionIntensity(nn.Module):
         _, h = self.gru(x)
         h_last = h[-1]
         logits_emotion = self.fc_emotion(h_last)  # ⚠ sin softmax
-        intensity = self.fc_intensity(h_last)
+        intensity = torch.sigmoid(self.fc_intensity(h_last))
         return logits_emotion, intensity
 
 # ============================================================
