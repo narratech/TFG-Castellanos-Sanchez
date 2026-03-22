@@ -39,6 +39,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EmotionAI")
     TArray<int64> OnehotSizes;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "EmotionAI")
+    int64 OutputSize;
 private:
 
     FEmotionIAInternalModel* InternalModel = nullptr;

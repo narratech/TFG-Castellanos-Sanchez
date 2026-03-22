@@ -295,7 +295,7 @@ TArray<float> UEmotionIA::RunInference(const TArray<float>& InputData)
     float* FloatArray = nullptr;
     Api->GetTensorMutableData(OutputTensors[0], (void**)&FloatArray);
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < OutputSize; i++)
     {
         Output[i] = FloatArray[i];
     }
@@ -351,5 +351,5 @@ void UEmotionIA::BeginPlay()
 
     InputSequence.Init(0, FeatureSize * SequenceLength);
     LinearInput.Init(0, FeatureSize * SequenceLength);
-    Output.Init(0,6);
+    Output.Init(0,OutputSize);
 }
