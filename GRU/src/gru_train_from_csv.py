@@ -1,6 +1,8 @@
 # ============================================================
 # gru_emocion_intensidad.py
 # ============================================================
+import warnings
+warnings.filterwarnings("ignore")
 
 import argparse
 import os
@@ -12,33 +14,36 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from onehot_loader import cargar_csv_onehot
-
-# ============================================================
-# 🔧 ARGUMENTOS
-# ============================================================
-
-parser = argparse.ArgumentParser(description="GRU supervisado para Emoción + Intensidad")
-parser.add_argument("--csv", type=str, required=True, help="Archivo CSV de entrada")
-parser.add_argument("--epochs", type=int, default=100, help="Número de épocas")
-parser.add_argument("--onehot", type=bool, default=False, help="Aplicar one-hot a la emoción")
-args = parser.parse_args()
+import configparser
 
 # ============================================================
 # 🔧 CONFIGURACIÓN
 # ============================================================
+parser = argparse.ArgumentParser(description="GRU supervisado")
+parser.add_argument("--onehot", type=bool, default=False, help="Aplicar one-hot a la emoción")
+args = parser.parse_args()
 
-CSV_PATH = os.path.join("datatest", args.csv)
-USE_CUDA = True
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+USE_CUDA = bool(config['GRUTrain']['USE_CUDA'])
 DEVICE = torch.device("cuda" if USE_CUDA and torch.cuda.is_available() else "cpu")
 
-HIDDEN_SIZE = 64
-NUM_LAYERS = 1
-SEQUENCE_LENGTH = 35
-BATCH_SIZE = 32
-LEARNING_RATE = 0.001
-ACCURACY_THRESHOLD = 0.1
+HIDDEN_SIZE = int(config['GRUTrain']['HIDDEN_SIZE'])
+NUM_LAYERS = int(config['GRUTrain']['NUM_LAYERS'])
+SEQUENCE_LENGTH = int(config['Dataset']['SEQUENCE_LENGTH'])
+BATCH_SIZE = int(config['GRUTrain']['BATCH_SIZE'])
+LEARNING_RATE = float(config['GRUTrain']['LEARNING_RATE'])
+ACCURACY_THRESHOLD = float(config['GRUTrain']['ACCURACY_THRESHOLD'])
+EPOCHS = int(config['GRUTrain']['EPOCHS'])
+ONEHOT = args.onehot
 
-OUTPUT_SIZE = 8  # emoción one-hot + intensidad
+if ONEHOT:
+    CSV_PATH = os.path.join("datatest", config['Dataset']['CSV_NAME'])
+else:
+    CSV_PATH = os.path.join("datatest", "generated_" + config['Dataset']['CSV_NAME'])
+
+OUTPUT_SIZES = list(map(int, config['Dataset']['OUTPUT_SIZES'].split(',')))
 
 os.makedirs("models", exist_ok=True)
 
@@ -55,8 +60,8 @@ class EmotionSequenceDataset(Dataset):
     @classmethod
     def from_csv(cls, csv_path, sequence_length):
         df = pd.read_csv(csv_path)
-        inputs = df.iloc[:, :-OUTPUT_SIZE].values
-        targets = df.iloc[:, -OUTPUT_SIZE:].values
+        inputs = df.iloc[:, :-sum(OUTPUT_SIZES)].values
+        targets = df.iloc[:, -sum(OUTPUT_SIZES):].values
         return cls(inputs, targets, sequence_length)
 
     def __len__(self):
@@ -98,7 +103,7 @@ def train_gru(device, dataset, loader, n_emotions):
 
     print("▶ Entrenando GRU supervisado (Emoción + Intensidad)")
 
-    for epoch in range(args.epochs):
+    for epoch in range(EPOCHS):
         total_loss = 0
         for x, y in loader:
             x, y = x.to(device), y.to(device)
@@ -114,7 +119,7 @@ def train_gru(device, dataset, loader, n_emotions):
             total_loss += loss.item()
 
         if (epoch+1) % 10 == 0:
-            print(f"GRU Epoch {epoch+1}/{args.epochs} - Loss {total_loss:.4f}")
+            print(f"GRU Epoch {epoch+1}/{EPOCHS} - Loss {total_loss:.4f}")
 
     torch.save(model.state_dict(), "models/gru_model.pth")
     print("✅ Modelo guardado en models/gru_model.pth")
@@ -194,7 +199,7 @@ def export_to_onnx(model, dataset, device):
 
 if __name__ == "__main__":
     # Cargar dataset
-    if args.onehot:
+    if ONEHOT:
         X_raw, Y_raw, categorical_info, feature_columns = cargar_csv_onehot(
             ruta_csv=CSV_PATH,
             columnas_target=["Emocion","Intensidad"]
@@ -206,10 +211,10 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     # Entrenar GRU
-    model = train_gru(DEVICE, dataset, loader, OUTPUT_SIZE-1)
+    model = train_gru(DEVICE, dataset, loader, sum(OUTPUT_SIZES)-1)
 
     # Exportar a ONNX
     export_to_onnx(model, dataset, DEVICE)
 
     # Evaluar
-    evaluate(model, loader, DEVICE, OUTPUT_SIZE-1)
+    evaluate(model, loader, DEVICE, sum(OUTPUT_SIZES)-1)

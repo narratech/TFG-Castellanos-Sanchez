@@ -24,7 +24,7 @@ REM -----------------------------
 REM 4) Ejecutar autoencoder.py
 REM -----------------------------
 echo Ejecutando autoencoder.py...
-python -u src/autoencoder.py --csv dataset.csv --epochs 1000
+python -u src/autoencoder.py
 
 if ERRORLEVEL 1 (
     echo Error ejecutando autoencoder.py. Pulsa Intro para salir.
@@ -39,8 +39,7 @@ REM -----------------------------
 REM 5) Ejecutar gru_train_from_csv.py
 REM -----------------------------
 echo Ejecutando gru_train_from_csv.py...
-python -u src/gru_train_from_csv.py --csv generated_dataset.csv --epochs 100
-
+python -u src/gru_train_from_csv.py
 if ERRORLEVEL 1 (
     echo Error ejecutando gru_train_from_csv.py. Pulsa Intro para salir.
     pause

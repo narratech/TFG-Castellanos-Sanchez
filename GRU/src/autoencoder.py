@@ -12,34 +12,34 @@ from torch.utils.data import Dataset, DataLoader
 from onehot_loader import cargar_csv_onehot
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-
-# ============================================================
-# 🔧 ARGUMENTOS
-# ============================================================
-
-parser = argparse.ArgumentParser(description="GRU Autoencoder + GRU supervisado para Emocion e Intensidad")
-parser.add_argument("--csv", type=str, required=True, help="Ruta del CSV de entrada")
-parser.add_argument("--epochs", type=int, default=100, help="Número de secuencias sintéticas a generar")
-args = parser.parse_args()
+import configparser
 
 # ============================================================
 # 🔧 CONFIGURACIÓN
 # ============================================================
 
-DATASET_PATH = args.csv
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+DATASET_PATH = config['Dataset']['CSV_NAME']
 CSV_FOLDER = "datatest/"
 OUTPUT_CSV = "generated_" + os.path.basename(DATASET_PATH)
 
-SEQUENCE_LENGTH = 35
-BLOCK_SIZE = SEQUENCE_LENGTH + 11
-LATENT_SIZE = 32
-HIDDEN_SIZE = 64
-AE_EPOCHS = 160
-GRU_EPOCHS = 100
-BATCH_SIZE = 32
-LR = 0.001
-LATENT_NOISE_STD = 0.1
-USE_CUDA = True
+NUM_GENERAR = int(config['Autoencoder']['NUM_GENERAR'])
+SEQUENCE_LENGTH = int(config['Dataset']['SEQUENCE_LENGTH'])
+BLOCK_SIZE = int(config['Dataset']['BLOCK_SIZE'])
+LATENT_SIZE = int(config['Autoencoder']['LATENT_SIZE'])
+HIDDEN_SIZE = int(config['Autoencoder']['HIDDEN_SIZE'])
+NUM_LAYERS = int(config['Autoencoder']['NUM_LAYERS'])
+AE_EPOCHS = int(config['Autoencoder']['AE_EPOCHS'])
+GRU_EPOCHS = int(config['Autoencoder']['GRU_EPOCHS'])
+BATCH_SIZE = int(config['Autoencoder']['BATCH_SIZE'])
+LR = float(config['Autoencoder']['LEARNING_RATE'])
+LATENT_NOISE_STD = float(config['Autoencoder']['LATENT_NOISE_STD'])
+USE_CUDA = bool(config['Autoencoder']['USE_CUDA'])
+
+OUTPUT_COLUMNS = list(map(str, config['Dataset']['OUTPUT'].split(',')))
+OUTPUT_SIZES = list(map(int, config['Dataset']['OUTPUT_SIZES'].split(',')))
 
 # ============================================================
 # 📊 DATASET
@@ -239,24 +239,25 @@ if __name__ == "__main__":
     # Cargar CSV con one-hot aplicado a Emocion
     X_raw, Y_raw, categorical_info_X, feature_columns, target_info = cargar_csv_onehot(
         ruta_csv=os.path.join(CSV_FOLDER, DATASET_PATH),
-        columnas_target=["Emocion","Intensidad"]
+        columnas_target=OUTPUT_COLUMNS
     )
-    emotion_columns = target_info["onehot_cols"]["Emocion"]
-    n_emotions = len(emotion_columns)
+    n_emotions = sum(OUTPUT_SIZES);
+    emotion_columns = target_info["onehot_cols"]
+    # n_emotions = len(emotion_columns)
     
 
-    df_Y = pd.DataFrame(
-    Y_raw,
-    columns=target_info["onehot_cols"]["Emocion"] + ["Intensidad"]
-    )
+    # df_Y = pd.DataFrame(
+    # Y_raw,
+    # columns=target_info["onehot_cols"]["Emocion"] + ["Intensidad"]
+    # )
 
-    counts = df_Y[emotion_columns].sum()
-    total = counts.sum()
-    percent = (counts / total * 100).round(2)
+    # counts = df_Y[emotion_columns].sum()
+    # total = counts.sum()
+    # percent = (counts / total * 100).round(2)
 
-    print("\n📊 Distribución de emociones del dataset:")
-    for col in counts.index:
-        print(f"{col:20} → {int(counts[col]):4d} ({percent[col]:5.2f}%)")
+    # print("\n📊 Distribución de emociones del dataset:")
+    # for col in counts.index:
+    #     print(f"{col:20} → {int(counts[col]):4d} ({percent[col]:5.2f}%)")
 
     input_size = X_raw.shape[1]
 
@@ -265,7 +266,7 @@ if __name__ == "__main__":
 
     # 1️⃣ Autoencoder
     ae = train_autoencoder(X_seq, input_size, device)
-    X_synth = generate_sequences(ae, X_seq, device, n_synth=args.epochs)
+    X_synth = generate_sequences(ae, X_seq, device, n_synth=NUM_GENERAR)
 
     # 2️⃣ Discretizar categóricas del autoencoder
     X_synth_discrete = discretize_categoricals(X_synth, categorical_info_X, feature_columns)
