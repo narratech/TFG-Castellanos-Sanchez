@@ -4,13 +4,28 @@ warnings.filterwarnings("ignore")
 import argparse
 import os
 
-parser = argparse.ArgumentParser(description="GRU supervisado")
-parser.add_argument("--onehot", type=bool, default=False, help="Aplicar one-hot a la emoción")
-args = parser.parse_args()
+
+# ============================================================
+# 📦 IMPORTS
+# ============================================================
+
+import torch
+import torch.nn as nn
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import confusion_matrix
+from onehot_loader import cargar_csv_onehot
 
 # ============================================================
 # 🔧 CONFIGURACIÓN
 # ============================================================
+
+parser = argparse.ArgumentParser(description="GRU supervisado")
+parser.add_argument("--onehot", type=bool, default=False, help="Aplicar one-hot a la emoción")
+args = parser.parse_args()
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -31,21 +46,8 @@ if ONEHOT:
 else:
     CSV_PATH = os.path.join("datatest", "generated_" + config['Dataset']['CSV_NAME'])
 
-OUTPUT_SIZE = int(config['Dataset']['OUTPUT_SIZE'])
-
-# ============================================================
-# 📦 IMPORTS
-# ============================================================
-
-import torch
-import torch.nn as nn
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-from torch.utils.data import Dataset, DataLoader
-from sklearn.metrics import confusion_matrix
-from onehot_loader import cargar_csv_onehot
+OUTPUT_COLUMNS = list(map(str, config['Dataset']['OUTPUT_NAMES'].split(',')))
+OUTPUT_SIZE = len(OUTPUT_COLUMNS)
 
 # Crea el directorio si no existe
 os.makedirs("models", exist_ok=True)
@@ -124,7 +126,8 @@ def train_gru(device, dataset, loader):
             optimizer.step()
             loss_total += loss.item()
 
-        print(f"Epoch {epoch+1}/{EPOCHS} - Loss {loss_total:.4f}")
+        if (epoch + 1) % 10 == 0:
+            print(f"GRU Epoch {epoch+1}/{EPOCHS} - Loss {loss_total:.4f}")
 
     #Export en formato .pth
     torch.save(model.state_dict(), "models/gru_model.pth")
@@ -236,18 +239,9 @@ if __name__ == "__main__":
     dataset = None
 
     if(ONEHOT):
-        targets = [
-        "Ira",
-        "Miedo",
-        "Felicidad",
-        "Tristeza",
-        "Sorpresa",
-        "Disgusto"
-        ]
-        
         X_raw, Y_raw, categorical_info, feature_columns = cargar_csv_onehot(
         ruta_csv=CSV_PATH,
-        columnas_target=targets
+        columnas_target=OUTPUT_COLUMNS
         )
         dataset = EmotionSequenceDataset(X_raw, Y_raw, SEQUENCE_LENGTH)
     else:

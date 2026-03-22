@@ -1,5 +1,17 @@
 import argparse
 import configparser
+import os
+
+# ============================================================
+# 📦 IMPORTS
+# ============================================================
+
+import torch
+import torch.nn as nn
+import pandas as pd
+import numpy as np
+from torch.utils.data import Dataset, DataLoader
+from onehot_loader import cargar_csv_onehot
 
 # ============================================================
 # 🔧 CONFIGURACIÓN
@@ -26,19 +38,8 @@ LATENT_NOISE_STD = float(config['Autoencoder']['LATENT_NOISE_STD'])
 ACCURACY_THRESHOLD = float(config['GRUTrain']['ACCURACY_THRESHOLD'])
 USE_CUDA = bool(config['Autoencoder']['USE_CUDA'])
 
-OUTPUT_COLUMNS = list(map(str, config['Dataset']['OUTPUT'].split(',')))
-OUTPUT_SIZE = int(config['Dataset']['OUTPUT_SIZE'])
-
-# ============================================================
-# 📦 IMPORTS
-# ============================================================
-
-import torch
-import torch.nn as nn
-import pandas as pd
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
-from onehot_loader import cargar_csv_onehot
+OUTPUT_COLUMNS = list(map(str, config['Dataset']['OUTPUT_NAMES'].split(',')))
+OUTPUT_SIZE = len(OUTPUT_COLUMNS)
 
 
 # ============================================================
@@ -278,10 +279,10 @@ def export_csv(seqs, preds, feature_columns):
 
     df = pd.DataFrame(
         rows,
-        columns=feature_columns + OUTPUT_SIZE
+        columns=feature_columns + OUTPUT_COLUMNS
     )
-    df.to_csv(CSV_FOLDER+OUTPUT_CSV+DATASET_PATH, index=False)
-    print(f"✅ CSV generado: {CSV_FOLDER+OUTPUT_CSV+DATASET_PATH}")
+    df.to_csv(CSV_FOLDER+OUTPUT_CSV, index=False)
+    print(f"✅ CSV generado: {CSV_FOLDER+OUTPUT_CSV}")
 
 # ============================================================
 # 🏁 MAIN
@@ -290,18 +291,9 @@ def export_csv(seqs, preds, feature_columns):
 if __name__ == "__main__":
     device = torch.device("cuda" if USE_CUDA and torch.cuda.is_available() else "cpu")
 
-    targets = [
-    "Ira",
-    "Miedo",
-    "Felicidad",
-    "Tristeza",
-    "Sorpresa",
-    "Disgusto"
-    ]
-
     X_raw, Y_raw, categorical_info, feature_columns  = cargar_csv_onehot(
     ruta_csv=CSV_FOLDER + DATASET_PATH,
-    columnas_target=targets
+    columnas_target=OUTPUT_COLUMNS
     )
 
     input_size = X_raw.shape[1]

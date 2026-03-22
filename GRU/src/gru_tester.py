@@ -2,34 +2,6 @@ import configparser
 import argparse
 import os
 
-parser = argparse.ArgumentParser(description="Script para entrenar GRU")
-
-parser.add_argument("--onehot", type=bool, default=False, help="Indica si necesita aplicar onehot")
-
-args = parser.parse_args()
-
-# ============================================================
-# 🔧 CONFIGURACIÓN
-# ============================================================
-
-config = configparser.ConfigParser()
-config.read('config.ini')
-
-CSV_PATH = os.path.join("datatest", config['Dataset']['TESTER_CSV_NAME'])
-MODEL_PATH = "models/gru_model.pth"
-CSV_OUTPUT = "datatest/predicted.csv"
-
-OUTPUT_SIZE = int(config['Dataset']['OUTPUT_SIZE'])
-SEQUENCE_LENGTH = int(config['Dataset']['SEQUENCE_LENGTH'])
-
-HIDDEN_SIZE = int(config['GRUTrain']['HIDDEN_SIZE'])
-NUM_LAYERS = int(config['GRUTrain']['NUM_LAYERS'])
-
-BATCH_SIZE = int(config['GRUTrain']['BATCH_SIZE'])
-ACCURACY_THRESHOLD = float(config['GRUTrain']['ACCURACY_THRESHOLD'])
-USE_CUDA = bool(config['GRUTrain']['USE_CUDA'])
-ONEHOT = args.onehot
-
 # ============================================================
 # 📦 IMPORTS
 # ============================================================
@@ -41,6 +13,34 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from scipy.stats import pearsonr
 from onehot_loader import cargar_csv_onehot
+
+# ============================================================
+# 🔧 CONFIGURACIÓN
+# ============================================================
+
+parser = argparse.ArgumentParser(description="Script para entrenar GRU")
+parser.add_argument("--onehot", type=bool, default=False, help="Indica si necesita aplicar onehot")
+args = parser.parse_args()
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+CSV_PATH = os.path.join("datatest", config['Dataset']['TESTER_CSV_NAME'])
+MODEL_PATH = "models/gru_model.pth"
+CSV_OUTPUT = "datatest/predicted.csv"
+
+SEQUENCE_LENGTH = int(config['Dataset']['SEQUENCE_LENGTH'])
+
+HIDDEN_SIZE = int(config['GRUTrain']['HIDDEN_SIZE'])
+NUM_LAYERS = int(config['GRUTrain']['NUM_LAYERS'])
+
+BATCH_SIZE = int(config['GRUTrain']['BATCH_SIZE'])
+ACCURACY_THRESHOLD = float(config['GRUTrain']['ACCURACY_THRESHOLD'])
+USE_CUDA = bool(config['GRUTrain']['USE_CUDA'])
+ONEHOT = args.onehot
+
+OUTPUT_COLUMNS = list(map(str, config['Dataset']['OUTPUT_NAMES'].split(',')))
+OUTPUT_SIZE = len(OUTPUT_COLUMNS)
 
 # ============================================================
 # 📊 DATASET
@@ -168,18 +168,10 @@ if __name__ == "__main__":
     # Dataset
     dataset = None
     if(ONEHOT):
-        targets = [
-        "Ira",
-        "Miedo",
-        "Felicidad",
-        "Tristeza",
-        "Sorpresa",
-        "Disgusto"
-        ]
         print(f"{CSV_PATH}")
         X_raw, Y_raw, categorical_info, feature_columns = cargar_csv_onehot(
         ruta_csv=CSV_PATH,
-        columnas_target=targets
+        columnas_target=OUTPUT_COLUMNS
         )
         dataset = EmotionSequenceDataset(X_raw, Y_raw, SEQUENCE_LENGTH)
     else:
