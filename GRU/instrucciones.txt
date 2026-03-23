@@ -1,5 +1,25 @@
+Para entrenar el modelo
+
 1) Usar import_dependencies.bat para crear el enviroment de Python.
 
-2) Usar training.bat con los datos dentro de datatest nombrados dataset.csv para crear el modelo gru ya entrenado.
+2) Poner tu .csv separado con ',' dentro de la carpeta dataset.
 
-3) Usar testeo.bat con datos dentro de datatest nombrados como realset.csv para comprobar la precisión y coorelaccion del modelo con los nuevos datos.
+3) Abrir el archivo config.ini e ir al apartado dataset.
+
+4) Poner el nombre del archivo .csv en CSV_NAME.
+
+5) Poner el nombre de las columnas de salida en OUTPUT_NAMES.
+
+6) Poner la longitud de cada secuencia en SEQUENCE_LENGTH.
+
+7) Poner el tamaño del bloque del dataset en BLOCK_SIZE = 35.
+
+8) Usar training.bat o gru_onehot.bat.
+
+
+
+Si se quiere comprobar el entrenamiento.
+
+1) Abrir el archivo config.ini, ir al apartado dataset y poner el nombre del archivo .csv con nuevos datos en TESTER_CSV_NAME.
+
+2) Usar testeo.bat para comprobar la precisión y coorelaccion del modelo con los nuevos datos.

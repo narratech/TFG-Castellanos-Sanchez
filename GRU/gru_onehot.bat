@@ -24,7 +24,7 @@ REM -----------------------------
 REM 5) Ejecutar gru_train_from_csv.py
 REM -----------------------------
 echo Ejecutando gru_train_from_csv.py...
-python -u src/gru_train_from_csv.py --csv dataset.csv --epochs 100 --onehot True
+python -u src/gru_train_from_csv.py --onehot True
 
 if ERRORLEVEL 1 (
     echo Error ejecutando gru_train_from_csv.py. Pulsa Intro para salir.
