@@ -107,11 +107,10 @@ def evaluate(model, loader, device):
     print(f"\n✅ Precisión (tolerancia ±{ACCURACY_THRESHOLD}): {accuracy:.4f}")
 
     # ---------- CORRELACIÓN ----------
-    emotion_names = ["Ira", "Miedo", "Felicidad", "Tristeza", "Sorpresa", "Disgusto"]
     correlations = []
 
     print("\n📈 Correlación por emoción:")
-    for i, name in enumerate(emotion_names):
+    for i, name in enumerate(OUTPUT_COLUMNS):
         if np.std(targets[:, i]) == 0:
             print(f"  ⚠️ {name}: constante (correlación no definida)")
             correlations.append(np.nan)
@@ -149,9 +148,7 @@ def save_predictions_csv(model, loader, device, csv_output="predictions.csv"):
     # Crear DataFrame
     df = pd.DataFrame(
         np.concatenate([all_inputs_last, all_preds], axis=1),
-        columns=[f"Input_{i+1}" for i in range(all_inputs_last.shape[1])] +
-                ["Ira","Miedo","Felicidad","Tristeza","Sorpresa","Disgusto"]
-    )
+        columns=[f"Input_{i+1}" for i in range(all_inputs_last.shape[1])] + OUTPUT_COLUMNS)
 
     df.to_csv(CSV_OUTPUT, index=False)
     print(f"✅ Predicciones guardadas en {CSV_OUTPUT}")

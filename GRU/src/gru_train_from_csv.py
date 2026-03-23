@@ -165,9 +165,8 @@ def evaluate(model, loader, device):
 
     # -------- MATRIZ CONFUSIÓN POR EMOCIÓN --------
     threshold = 0.5
-    emotion_names = ["Ira", "Miedo", "Felicidad", "Tristeza", "Sorpresa", "Disgusto"]
 
-    for i, emotion in enumerate(emotion_names):
+    for i, emotion in enumerate(OUTPUT_COLUMNS):
         y_true = (targets[:, i] >= threshold).astype(int)
         y_pred = (preds[:, i] >= threshold).astype(int)
         cm = confusion_matrix(y_true, y_pred, labels=[0,1])  # <-- Corregido
