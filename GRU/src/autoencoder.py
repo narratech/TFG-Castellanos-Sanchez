@@ -33,7 +33,8 @@ NUM_LAYERS = int(config['Autoencoder']['NUM_LAYERS'])
 AE_EPOCHS = int(config['Autoencoder']['AE_EPOCHS'])
 GRU_EPOCHS = int(config['Autoencoder']['GRU_EPOCHS'])
 BATCH_SIZE = int(config['Autoencoder']['BATCH_SIZE'])
-LR = float(config['Autoencoder']['LEARNING_RATE'])
+AE_LR = float(config['Autoencoder']['AE_LEARNING_RATE'])
+GRU_LR = float(config['Autoencoder']['GRU_LEARNING_RATE'])
 LATENT_NOISE_STD = float(config['Autoencoder']['LATENT_NOISE_STD'])
 ACCURACY_THRESHOLD = float(config['GRUTrain']['ACCURACY_THRESHOLD'])
 USE_CUDA = bool(config['Autoencoder']['USE_CUDA'])
@@ -98,7 +99,7 @@ class GRUEmotion(nn.Module):
 
 def train_autoencoder(X, input_size, device):
     ae = GRUAutoencoder(input_size).to(device)
-    optimizer = torch.optim.Adam(ae.parameters(), lr=LR)
+    optimizer = torch.optim.Adam(ae.parameters(), lr=AE_LR)
     loss_fn = nn.MSELoss()
 
     loader = DataLoader(
@@ -208,7 +209,7 @@ def discretize_categoricals(X, categorical_indices):
 
 def train_gru_real(X, Y, input_size, device):
     model = GRUEmotion(input_size).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.Adam(model.parameters(), lr=GRU_LR)
     loss_fn = nn.MSELoss()
 
     loader = DataLoader(
